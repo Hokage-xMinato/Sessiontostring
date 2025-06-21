@@ -62,7 +62,7 @@
             background-color: #6366f1;
             color: white;
             border: none;
-            border-radius: 88px;
+            border-radius: 8px; /* Corrected from 88px */
             font-size: 18px;
             font-weight: 700;
             cursor: pointer;
@@ -168,9 +168,9 @@
             const apiHash = apiHashInput.value;
 
             try {
-                // IMPORTANT FIX: Use window.location.origin to create an absolute URL
-                // and add the /api prefix for the blueprint.
-                const backendUrl = window.location.origin + '/api/get_phone_number';
+                // IMPORTANT: Use window.location.origin + '/get_phone_number'
+                // This targets the API endpoint directly on the same domain as the frontend.
+                const backendUrl = window.location.origin + '/get_phone_number';
 
                 const response = await fetch(backendUrl, {
                     method: 'POST',
@@ -180,7 +180,8 @@
                     body: JSON.stringify({ session_string: sessionString, api_id: apiId, api_hash: apiHash })
                 });
 
-                const data = await response.json(); // This line will fail if the response is HTML
+                // This is the critical line: it expects JSON. If we get HTML here, it will throw.
+                const data = await response.json(); 
 
                 loadingDiv.classList.add('hidden'); // Hide loading spinner
 
@@ -196,14 +197,18 @@
                 } else {
                     resultDiv.classList.remove('hidden');
                     resultDiv.classList.add('error'); // Add error styling
-                    resultDiv.innerHTML = `<p><strong class="text-red-700">Error:</strong> ${data.message}</p>`;
+                    resultDiv.innerHTML = `
+                        <p><strong class="text-red-700">Error:</strong> ${data.message}</p>
+                        ${data.details ? `<pre class="text-red-600 text-xs mt-2">${data.details}</pre>` : ''}
+                    `;
                 }
             } catch (error) {
                 loadingDiv.classList.add('hidden'); // Hide loading spinner
                 resultDiv.classList.remove('hidden');
                 resultDiv.classList.add('error'); // Add error styling
-                resultDiv.innerHTML = `<p><strong class="text-red-700">Network Error:</strong> Could not connect to the backend service. Make sure it's running. Details: ${error.message}</p>
-                                        <p class="text-red-700">This often means the backend URL is incorrect or the backend sent an unexpected response (e.g., HTML instead of JSON).</p>`;
+                resultDiv.innerHTML = `<p><strong class="text-red-700">Network Error:</strong> Could not connect to the backend service or received unexpected response. Details: ${error.message}</p>
+                                        <p class="text-red-700 mt-2">This means the browser received something that wasn't valid JSON. Often, it's an HTML error page from the server.</p>
+                                        <p class="text-red-700 mt-2"><strong>Next step:</strong> Check your Render service logs for any Python errors when it starts or when you make a request. Also, use your browser's Developer Tools (F12, then Network tab) to inspect the specific failed request and see the raw 'Response' body.</p>`;
                 console.error('Fetch error:', error);
             } finally {
                 submitBtn.disabled = false; // Re-enable button
