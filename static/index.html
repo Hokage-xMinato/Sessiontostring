@@ -62,7 +62,7 @@
             background-color: #6366f1;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 88px;
             font-size: 18px;
             font-weight: 700;
             cursor: pointer;
@@ -168,9 +168,9 @@
             const apiHash = apiHashInput.value;
 
             try {
-                // IMPORTANT FIX: Use window.location.origin to create an absolute URL for the API endpoint.
-                // This ensures the request goes to the correct base URL of your deployed service.
-                const backendUrl = window.location.origin + '/get_phone_number';
+                // IMPORTANT FIX: Use window.location.origin to create an absolute URL
+                // and add the /api prefix for the blueprint.
+                const backendUrl = window.location.origin + '/api/get_phone_number';
 
                 const response = await fetch(backendUrl, {
                     method: 'POST',
