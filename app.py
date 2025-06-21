@@ -1,19 +1,29 @@
-# app.py - Flask Backend for Telethon Session Phone Number Retriever
+# app.py - Flask Backend for Telethon Session Phone Number Retrieval
 
-from flask import Flask, request, jsonify, send_from_directory, Blueprint
+from flask import Flask, request, jsonify, send_from_directory
 from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.types import User
 import asyncio
 import os
+import traceback # Import traceback for detailed error logging
 
 # Initialize Flask app
-# By default, Flask looks for 'static' and 'templates' folders.
-# We'll place index.html in a 'static' folder.
+# Flask will automatically look for 'static' and 'templates' folders.
+# Make sure index.html is inside a 'static' folder.
 app = Flask(__name__)
 
-# Create an API Blueprint
-api_bp = Blueprint('api', __name__, url_prefix='/api')
+# --- Global Error Handler to always return JSON ---
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Log the full traceback for debugging on the server side
+    app.logger.error(f"An unhandled error occurred: {e}", exc_info=True)
+    response = {
+        "success": False,
+        "message": f"An internal server error occurred: {str(e)}",
+        "details": traceback.format_exc() # Include traceback for debugging
+    }
+    return jsonify(response), 500
 
 @app.route('/')
 def serve_index():
@@ -24,10 +34,10 @@ def serve_index():
     # Flask will automatically look for 'index.html' inside the 'static' folder.
     return send_from_directory(app.static_folder, 'index.html')
 
-@api_bp.route('/get_phone_number', methods=['POST'])
-async def get_phone_number_api(): # Renamed function to avoid conflict with potential other get_phone_number functions
+@app.route('/get_phone_number', methods=['POST'])
+async def get_phone_number_api():
     """
-    Handles POST requests from the frontend to the /api/get_phone_number endpoint.
+    Handles POST requests from the frontend to the /get_phone_number endpoint.
     Receives session string, API ID, and API Hash in JSON format,
     then uses Telethon to retrieve and return the phone number of the
     associated Telegram account.
@@ -87,22 +97,17 @@ async def get_phone_number_api(): # Renamed function to avoid conflict with pote
         }), 400
     except Exception as e:
         # Catch any other unexpected errors during Telethon operations
-        print(f"Error during Telethon operation: {e}") # Log the full error for debugging
-        return jsonify({
-            'success': False,
-            'message': f'An unexpected error occurred while processing your request: {str(e)}'
-        }), 500 # 500 Internal Server Error status
+        # This will be caught by the global error handler, but explicitly
+        # raising it here for clarity or if specific handling is needed later.
+        raise e # Re-raise to be caught by the global error handler
     finally:
         # Ensure the client connection is always closed, regardless of success or failure
         if client and client.is_connected():
             await client.disconnect()
 
-# Register the blueprint with the app
-app.register_blueprint(api_bp)
 
 if __name__ == '__main__':
     # When running locally, Flask will automatically use the PORT environment variable if set,
     # otherwise it defaults to 5000.
     # For production deployments (like Render), Gunicorn will handle port binding.
     app.run(debug=True, host='0.0.0.0', port=os.getenv('PORT', 5000))
-
