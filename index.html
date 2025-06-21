@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telethon Session Phone Number Retriever</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            border: 1px solid #e2e8f0;
+        }
+        label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 8px;
+            display: block;
+        }
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            color: #2d3748;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+        button:hover {
+            background-color: #4f46e5;
+            transform: translateY(-2px);
+        }
+        button:active {
+            background-color: #3b30d1;
+            transform: translateY(0);
+        }
+        .result-box {
+            background-color: #e0f2fe;
+            border: 1px solid #90cdf4;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            font-size: 16px;
+            color: #2c5282;
+            word-wrap: break-word; /* Ensure long strings wrap */
+            white-space: pre-wrap; /* Preserve whitespace and line breaks */
+        }
+        .result-box.error {
+            background-color: #ffebeb;
+            border-color: #fc8181;
+            color: #c53030;
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            height: 40px;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #6366f1;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-8">
+            Telethon Session Phone Number Retriever
+        </h1>
+        <p class="text-gray-600 text-center mb-6">
+            Enter your Telethon session string, API ID, and API Hash to retrieve the associated phone number.
+        </p>
+
+        <form id="phoneForm">
+            <label for="sessionString">Telethon Session String:</label>
+            <textarea id="sessionString" name="sessionString" placeholder="Paste your Telethon session string here..." required></textarea>
+
+            <label for="apiId">API ID:</label>
+            <input type="number" id="apiId" name="apiId" placeholder="Enter your Telegram API ID" required>
+
+            <label for="apiHash">API Hash:</label>
+            <input type="text" id="apiHash" name="apiHash" placeholder="Enter your Telegram API Hash" required>
+
+            <button type="submit" id="submitBtn">Get Phone Number</button>
+        </form>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p class="ml-3 text-gray-600">Retrieving data...</p>
+        </div>
+
+        <div id="result" class="result-box hidden">
+            <!-- Results will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        const phoneForm = document.getElementById('phoneForm');
+        const sessionStringInput = document.getElementById('sessionString');
+        const apiIdInput = document.getElementById('apiId');
+        const apiHashInput = document.getElementById('apiHash');
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingDiv = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+
+        phoneForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent default form submission
+
+            resultDiv.classList.add('hidden'); // Hide previous results
+            resultDiv.classList.remove('error'); // Remove error styling
+            loadingDiv.classList.remove('hidden'); // Show loading spinner
+            submitBtn.disabled = true; // Disable button
+
+            const sessionString = sessionStringInput.value;
+            const apiId = apiIdInput.value;
+            const apiHash = apiHashInput.value;
+
+            try {
+                // Determine the backend URL. For local testing, it's usually http://127.0.0.1:5000.
+                // For deployment, you'd replace this with your deployed service's URL.
+                // Using relative path for simplicity assuming frontend and backend are on the same domain/port
+                const backendUrl = '/get_phone_number';
+
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ session_string: sessionString, api_id: apiId, api_hash: apiHash })
+                });
+
+                const data = await response.json();
+
+                loadingDiv.classList.add('hidden'); // Hide loading spinner
+
+                if (data.success) {
+                    resultDiv.classList.remove('hidden');
+                    resultDiv.innerHTML = `
+                        <p><strong class="text-blue-700">Phone Number:</strong> ${data.phone_number}</p>
+                        <p><strong class="text-blue-700">User ID:</strong> ${data.user_id}</p>
+                        <p><strong class="text-blue-700">First Name:</strong> ${data.first_name}</p>
+                        <p><strong class="text-blue-700">Last Name:</strong> ${data.last_name}</p>
+                        <p><strong class="text-blue-700">Username:</strong> ${data.username}</p>
+                    `;
+                } else {
+                    resultDiv.classList.remove('hidden');
+                    resultDiv.classList.add('error'); // Add error styling
+                    resultDiv.innerHTML = `<p><strong class="text-red-700">Error:</strong> ${data.message}</p>`;
+                }
+            } catch (error) {
+                loadingDiv.classList.add('hidden'); // Hide loading spinner
+                resultDiv.classList.remove('hidden');
+                resultDiv.classList.add('error'); // Add error styling
+                resultDiv.innerHTML = `<p><strong class="text-red-700">Network Error:</strong> Could not connect to the backend service. Make sure it's running. Details: ${error.message}</p>`;
+                console.error('Fetch error:', error);
+            } finally {
+                submitBtn.disabled = false; // Re-enable button
+            }
+        });
+    </script>
+</body>
+</html>
