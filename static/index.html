@@ -168,10 +168,9 @@
             const apiHash = apiHashInput.value;
 
             try {
-                // Determine the backend URL. For local testing, it's usually http://127.0.0.1:5000.
-                // For deployment, you'd replace this with your deployed service's URL.
-                // Using relative path for simplicity assuming frontend and backend are on the same domain/port
-                const backendUrl = '/get_phone_number';
+                // IMPORTANT FIX: Use window.location.origin to create an absolute URL for the API endpoint.
+                // This ensures the request goes to the correct base URL of your deployed service.
+                const backendUrl = window.location.origin + '/get_phone_number';
 
                 const response = await fetch(backendUrl, {
                     method: 'POST',
@@ -181,7 +180,7 @@
                     body: JSON.stringify({ session_string: sessionString, api_id: apiId, api_hash: apiHash })
                 });
 
-                const data = await response.json();
+                const data = await response.json(); // This line will fail if the response is HTML
 
                 loadingDiv.classList.add('hidden'); // Hide loading spinner
 
@@ -203,7 +202,8 @@
                 loadingDiv.classList.add('hidden'); // Hide loading spinner
                 resultDiv.classList.remove('hidden');
                 resultDiv.classList.add('error'); // Add error styling
-                resultDiv.innerHTML = `<p><strong class="text-red-700">Network Error:</strong> Could not connect to the backend service. Make sure it's running. Details: ${error.message}</p>`;
+                resultDiv.innerHTML = `<p><strong class="text-red-700">Network Error:</strong> Could not connect to the backend service. Make sure it's running. Details: ${error.message}</p>
+                                        <p class="text-red-700">This often means the backend URL is incorrect or the backend sent an unexpected response (e.g., HTML instead of JSON).</p>`;
                 console.error('Fetch error:', error);
             } finally {
                 submitBtn.disabled = false; // Re-enable button
