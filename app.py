@@ -8,16 +8,17 @@ import asyncio
 import os
 
 # Initialize Flask app
-# By setting static_folder='.' and static_url_path='', Flask will serve files
-# from the current directory, including index.html, when accessed via the root URL.
-app = Flask(__name__, static_folder='.', static_url_path='')
+# By default, Flask looks for 'static' and 'templates' folders.
+# We'll place index.html in a 'static' folder, so no custom static_folder parameter is needed here.
+app = Flask(__name__)
 
 @app.route('/')
 def serve_index():
     """
-    Serves the main HTML page (index.html) from the current directory.
+    Serves the main HTML page (index.html) from the 'static' directory.
     When you visit the root URL of your deployed service, this will load the web form.
     """
+    # Flask will automatically look for 'index.html' inside the 'static' folder.
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/get_phone_number', methods=['POST'])
