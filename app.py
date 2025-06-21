@@ -1,6 +1,6 @@
-# app.py - Flask Backend for Telethon Session Phone Number Retrieval
+# app.py - Flask Backend for Telethon Session Phone Number Retriever
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Blueprint
 from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.types import User
@@ -9,8 +9,11 @@ import os
 
 # Initialize Flask app
 # By default, Flask looks for 'static' and 'templates' folders.
-# We'll place index.html in a 'static' folder, so no custom static_folder parameter is needed here.
+# We'll place index.html in a 'static' folder.
 app = Flask(__name__)
+
+# Create an API Blueprint
+api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 @app.route('/')
 def serve_index():
@@ -21,10 +24,10 @@ def serve_index():
     # Flask will automatically look for 'index.html' inside the 'static' folder.
     return send_from_directory(app.static_folder, 'index.html')
 
-@app.route('/get_phone_number', methods=['POST'])
-async def get_phone_number():
+@api_bp.route('/get_phone_number', methods=['POST'])
+async def get_phone_number_api(): # Renamed function to avoid conflict with potential other get_phone_number functions
     """
-    Handles POST requests from the frontend.
+    Handles POST requests from the frontend to the /api/get_phone_number endpoint.
     Receives session string, API ID, and API Hash in JSON format,
     then uses Telethon to retrieve and return the phone number of the
     associated Telegram account.
@@ -94,6 +97,8 @@ async def get_phone_number():
         if client and client.is_connected():
             await client.disconnect()
 
+# Register the blueprint with the app
+app.register_blueprint(api_bp)
 
 if __name__ == '__main__':
     # When running locally, Flask will automatically use the PORT environment variable if set,
